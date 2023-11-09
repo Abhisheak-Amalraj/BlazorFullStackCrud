@@ -1,0 +1,156 @@
+﻿@page "/waterintake"
+@page "/waterintake/{id:int}"
+@inject IWaterIntakeService WaterIntakeService
+@inject NavigationManager NavigationManager
+@inject IUserService UserService
+@inject HttpClient Http
+
+
+@*// Heading that changes based on create or edit mode*@
+<h3>@(ID == null ? "Create" : "Edit") Water Intake Record</h3> 
+
+@if (intakeRecord == null)
+{
+    <p>Loading...</p> //Show a loading message or spinner while data is being fetched
+}
+else
+{
+    // Form for editing or creating a water intake record with data-binding to the 'intakeRecord' model
+    <EditForm Model="intakeRecord" OnSubmit="HandleSubmit">
+        <div class="form-group">
+            <label for="userSelect">Select User:</label>
+
+            @*Dropdown for selecting a user, binds to the selectedUserId variable*@
+            <select id="userSelect" @bind="selectedUserId">
+
+                @*Iterates over the users to populate the dropdown options*@
+                @foreach (var user in users)
+                {
+                    <option value="@user.ID">@user.firstname @user.surname</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label for="intakeDate">Intake Date</label>
+            <InputDate id="intakeDate" @bind-Value="intakeRecord.IntakeDate" class="form-control"></InputDate>
+        </div>
+        <div>
+            <label for="consumedWater">Consumed Water (ml)</label>
+            <InputNumber id="consumedWater" @bind-Value="intakeRecord.ConsumedWater" class="form-control"></InputNumber>
+        </div>
+        <br />
+        <button type="submit" class="btn btn-primary">@btnText</button>
+        <button type="button" class="btn btn-danger" @onclick="DeleteIntakeRecord">Delete Intake Record</button>
+    </EditForm>
+}
+
+@*Display an error message if one exists*@
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
+@code {
+    //Using this parameter attribute to access -> "{id:int}"
+    [Parameter]
+    public int? ID { get; set; }
+
+    //Text for the submit button
+    string btnText;
+
+    // List of users for the dropdown
+    private List<User> users = new List<User>();
+
+    // ID of the selected user
+    private int selectedUserId;
+
+    // The intake record being edited or created
+    WaterIntake intakeRecord;
+
+    //String to hold error messages
+    string errorMessage;
+
+    // Initialization method, fetches users and sets up initial state
+    protected override async Task OnInitializedAsync()
+    {
+        users = await Http.GetFromJsonAsync<List<User>>("api/User"); // Fetch user list from API
+        selectedUserId = users.FirstOrDefault()?.ID ?? 0; // Set the selected user ID
+        btnText = ID == null ? "Save New Intake Record" : "Update Intake Record"; 
+    }
+
+    // Called when parameters are set, to initialize or fetch the intakeRecord
+    protected override async Task OnParametersSetAsync()
+    {
+        if (ID.HasValue)
+        {
+            // If an ID is provided, fetch the existing intake record
+            intakeRecord = await WaterIntakeService.GetSingleIntakeRecord(ID.Value);
+            if (intakeRecord != null)
+            {
+                selectedUserId = intakeRecord.UserID; // Set the selected user ID from intakeRecord
+            }
+            else
+            {
+                // Initialize a new intakeRecord if null
+                intakeRecord = new WaterIntake { IntakeDate = DateTime.Today, UserID = selectedUserId };
+            }
+        }
+        else
+        {
+            // If ID is not provided, we're creating a new intake record
+            intakeRecord = new WaterIntake { IntakeDate = DateTime.Today, UserID = selectedUserId };
+        }
+    }
+
+
+    // Handles form submission for creating or updating an intake record
+    async Task HandleSubmit()
+    {
+        // Check if the selected user exists in the users list
+        var userExists = users.Any(u => u.ID == selectedUserId);
+
+        if (userExists)
+        {
+            intakeRecord.UserID = selectedUserId; // Assign the selected userID to the intakeRecord
+
+            if (ID == null)
+            {
+                // Create a new intakeRecord if ID is null
+                try
+                {
+                    await WaterIntakeService.CreateIntakeRecord(intakeRecord);
+                    NavigationManager.NavigateTo("/waterintakes"); // Redirect after successful creation
+                }
+                catch (Exception ex)
+                {
+                    errorMessage = $"Error creating record: {ex.Message}";
+                }
+            }
+            else
+            {
+                // Update an existing record if ID is not null
+                try
+                {
+                    await WaterIntakeService.UpdateIntakeRecord(intakeRecord);
+                    NavigationManager.NavigateTo("/waterintakes"); // Redirect after successful update
+                }
+                catch (Exception ex)
+                {
+                    errorMessage = $"Error updating record: {ex.Message}";
+                }
+            }
+        }
+        else
+        {
+            // Set an error message if the selected user doesn't exist
+            errorMessage = "The selected user does not exist.";
+        }
+    }
+
+
+    // Handles deletion of the intake record
+    async Task DeleteIntakeRecord()
+    {
+        await WaterIntakeService.DeleteIntakeRecord(intakeRecord.ID);
+    }
+}

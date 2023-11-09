@@ -1,0 +1,52 @@
+﻿@page "/waterintakes"
+@inject IWaterIntakeService WaterIntakeService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Water Intake Records</PageTitle>
+
+<h3>Water Intake Records</h3>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>User ID</th>
+            <th>Intake Date</th>
+            <th>Consumed Water (ml)</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var intakeRecord in WaterIntakeService.WaterIntakeRecords) // Loops through each WaterIntakeRecords
+        {
+            <tr>
+                <td>@intakeRecord.UserID</td>
+                <td>@intakeRecord.IntakeDate.ToShortDateString()</td>
+                <td>@intakeRecord.ConsumedWater</td>
+                <td>
+                    <button class="btn btn-primary" @onclick="(() => ShowIntakeRecord(intakeRecord.ID))"><i class="oi oi-pencil"></i></button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+<button class="btn btn-primary" @onclick="CreateNewIntakeRecord">Add Water Intake Record</button>
+
+@code {
+    // Lifecycle methods
+    protected override async Task OnInitializedAsync()
+    {
+        // Calls the GetWaterIntakeRecords method from the WaterIntakeService
+        await WaterIntakeService.GetWaterIntakeRecords();
+    }
+
+    // This method navigates the user to a detail view for a specific WaterIntakeRecord
+    void ShowIntakeRecord(int id)
+    {
+        NavigationManager.NavigateTo($"waterintake/{id}");
+    }
+
+    // This method is used to navigate the user to the page for creating a new WaterIntakeRecord
+    void CreateNewIntakeRecord()
+    {
+        NavigationManager.NavigateTo("/waterintake");
+    }
+}

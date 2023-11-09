@@ -1,0 +1,123 @@
+﻿@page "/user" 
+@page "/user/{id:int}"
+@inject IUserService UserService
+@inject NavigationManager NavigationManager
+
+
+
+@if (ID == null) // Check if an ID is provided or not, creating a new user
+{
+    <PageTitle>Create a new User</PageTitle>
+    <h3>Create a new User</h3>
+}
+else // If an ID is provided, edit the existing user
+{
+    <PageTitle>Edit User Details</PageTitle>
+
+    <h3>Edit @user.firstname @user.surname</h3>
+
+}
+
+
+@*Form for editing or creating a user with data-binding to the 'user' model*@
+<EditForm Model="user" OnSubmit="HandleSubmit"> 
+    <div>
+        <label onformchange="firstname"> First Name</label>
+        <InputText id="firstname" @bind-Value="user.firstname" class="form-control"></InputText>
+    </div>
+    
+    <div>
+        <lablel onformchange="surname"> Surname</lablel>
+        <InputText id="surname" @bind-Value="user.surname" class="form-control"></InputText>
+    </div>
+    <div>
+        <lablel onformchange="email"> Email</lablel>
+        <InputText id="email" @bind-Value="user.email" class="form-control"></InputText>
+    </div>
+    <br />
+    <button type="submit" class="btn btn-primary">@btnText</button>
+    <button type="button" class="btn btn-danger" @onclick="DeleteUser"> Delete  User</button>
+
+</EditForm>
+
+
+@*Display an error message if one exists*@
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
+
+@code {
+    //Using this parameter attribute to access -> "{id:int}"
+    [Parameter]
+    public int? ID { get; set; }
+
+    //Text for the submit button
+    string btnText = string.Empty;
+
+    //Initialize a new user object with an empty list of WaterIntakes
+    User user = new User { WaterIntakes = new List<WaterIntake>()};
+
+    //String to hold error messages
+    string errorMessage;
+
+    //This method runs when the component is initialised
+    protected override async Task OnInitializedAsync()
+    {
+        btnText = ID == null ? "Save new User" : "Update User"; //Set button text based on whether a user is being created or updated
+    }
+
+    //This method runs when parameters supplied to the component are set
+    protected override async Task OnParametersSetAsync()
+    {
+        if (ID.HasValue)
+        {
+            //If an ID value is present, fetch the user details from the UserService
+            user = await UserService.GetSingleUser(ID.Value);
+        }
+        else
+        {
+            user = new User(); //If no ID, initialise a new user object
+        }
+    }
+    
+    // This method runs when the component is initialized
+    protected override void OnInitialized()
+    {
+        user.WaterIntakes = new List<WaterIntake>(); // Initialize if it should always be sent
+    }
+
+    //Asynchronous event handler for the form submission
+    async Task HandleSubmit()
+    {
+        if(ID == null)
+        {
+            // If creating a new user, call the CreateUser method
+            await UserService.CreateUser(user);
+            NavigationManager.NavigateTo("/users");
+        }
+        else
+
+        {
+            try
+            {
+                // If updating an existing user, call the UpdateUser method
+                await UserService.UpdateUser(user);
+                NavigationManager.NavigateTo("/users");
+            }
+            catch (Exception ex)
+            {
+                // If an exception occurs, catch it and store the message in errorMessage
+                errorMessage = ex.Message;
+            }
+        }
+    }
+
+    // Asynchronous method to delete a user
+    async Task DeleteUser()
+    {
+        // Call the DeleteUser method from the UserService
+        await UserService.DeleteUser(user.ID);
+    }
+}

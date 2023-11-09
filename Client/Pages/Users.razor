@@ -1,0 +1,57 @@
+﻿@page "/users"
+@inject IUserService UserService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Users</PageTitle>
+
+<h3>Users</h3>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>First Name</th>
+            <th>Surname</th>
+            <th>Email</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var user in UserService.Users) // Loop through each user in the list of users
+        {
+            <tr>
+                <td>@user.firstname</td>
+                <td>@user.surname</td>
+                <td>@user.email</td>
+                <td>
+                    <button class="btn btn-primary" @onclick="(() => ShowUser(user.ID))"><i class="oi oi-pencil"></i></button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+<button class="btn btn-primary" @onclick="CreateNewUser">Create a New User</button>
+
+@code {
+
+    // Lifecycle method that is called when the component is being initialized
+    // It's an asynchronous method, which allows for calling async operations like fetching data from an API
+    protected override async Task OnInitializedAsync()
+    {
+        // Calls a method 'GetUsers' from the UserService, which likely sends a request to a server to retrieve a list of users
+        await UserService.GetUsers();
+    }
+
+    // Method for navigating to a specific user's details/edit page
+    // It takes an integer id as a parameter, which represents the unique identifier of a user
+    void ShowUser(int id)
+    {
+        // Uses the NavigationManager to change the URL to the specific user's page, which will display or allow editing of the user's details
+        NavigationManager.NavigateTo($"user/{id}");
+    }
+
+    // Method for navigating to the page where a new user can be created
+    void CreateNewUser()
+    {
+        // Uses the NavigationManager to change the URL to the route associated with creating a new user
+        NavigationManager.NavigateTo("/user");
+    }
+}
