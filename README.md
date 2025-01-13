@@ -168,13 +168,3 @@ Add authentication and role-based access control.
 Implement user activity tracking for analytics.
 Add email notifications for daily water intake summaries.
 Implement Docker containers for easier deployment.
-Thank you for reviewing this project! Feel free to
-
-
-
-
-
-
-
-
-ChatGPT can make mistakes. Check important info.
